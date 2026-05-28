@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto YouTube Shorts Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+        }
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        .glow-btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+            transition: all 0.3s;
+        }
+        .glow-btn:hover {
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.6);
+            transform: translateY(-1px);
+        }
+        .glow-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .yt-btn {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            box-shadow: 0 0 15px rgba(220, 38, 38, 0.3);
+        }
+        .yt-btn:hover {
+            box-shadow: 0 0 25px rgba(220, 38, 38, 0.5);
+        }
+        .step-icon { width: 28px; height: 28px; flex-shrink: 0; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { animation: spin 1s linear infinite; }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.2); }
+            50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.5); }
+        }
+        .pulse-border { animation: pulse-glow 2s ease-in-out infinite; }
+        .music-upload {
+            border: 2px dashed rgba(99, 102, 241, 0.3);
+            transition: all 0.3s;
+        }
+        .music-upload:hover, .music-upload.dragover {
+            border-color: rgba(99, 102, 241, 0.6);
+            background: rgba(99, 102, 241, 0.05);
+        }
+        .music-upload.has-file {
+            border-color: rgba(34, 197, 94, 0.5);
+            background: rgba(34, 197, 94, 0.05);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+
+    <div class="max-w-2xl mx-auto px-4 py-10">
+
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Auto YouTube Shorts
+            </h1>
+            <p class="text-slate-400 mt-2 text-lg">Generate, edit & upload — fully automated</p>
+            <p class="text-slate-500 mt-1 text-sm">Hook-first 28-30s videos with 4 clips + your music</p>
+        </div>
+
+        <!-- YouTube Connection Card -->
+        <div class="card rounded-2xl p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg class="w-8 h-8 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"/>
+                        <path d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="white"/>
+                    </svg>
+                    <div>
+                        <h3 class="font-semibold text-lg">YouTube Account</h3>
+                        <p id="yt-status-text" class="text-sm text-slate-400">Checking...</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="yt-badge" class="hidden px-3 py-1 rounded-full text-xs font-semibold"></span>
+                    <button id="yt-setup-btn" onclick="setupYouTube()" class="yt-btn text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-105">
+                        Setup YouTube
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Topic + Music Input Card -->
+        <div class="card rounded-2xl p-6 mb-6">
+            <!-- Topic Input -->
+            <label class="block text-sm font-medium text-slate-300 mb-3">Enter Video Topic</label>
+            <textarea
+                id="topic-input"
+                rows="3"
+                placeholder="e.g., Animals you haven't seen as babies — cute dogs, baby elephants, tiny kittens"
+                class="w-full bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none text-base"
+            ></textarea>
+
+            <!-- Music Upload -->
+            <label class="block text-sm font-medium text-slate-300 mt-5 mb-3">Background Music</label>
+            <div
+                id="music-dropzone"
+                class="music-upload rounded-xl p-5 text-center cursor-pointer"
+                onclick="document.getElementById('music-input').click()"
+            >
+                <input type="file" id="music-input" accept="audio/*" class="hidden" onchange="handleMusicSelect(event)">
+                <div id="music-placeholder">
+                    <svg class="w-10 h-10 mx-auto text-slate-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                    </svg>
+                    <p class="text-slate-400 text-sm">Click or drag to upload background music</p>
+                    <p class="text-slate-600 text-xs mt-1">MP3, WAV, or any audio format</p>
+                </div>
+                <div id="music-selected" class="hidden flex items-center justify-center gap-3">
+                    <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/>
+                    </svg>
+                    <div class="text-left">
+                        <p id="music-filename" class="text-green-400 text-sm font-medium"></p>
+                        <p id="music-size" class="text-slate-500 text-xs"></p>
+                    </div>
+                    <button onclick="clearMusic(event)" class="ml-2 text-slate-500 hover:text-red-400 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Generate Button -->
+            <div class="mt-5 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500">28-30s video with hook + 4 clips + your music</p>
+                    <p class="text-xs text-slate-600 mt-0.5">Auto hashtags: #Shorts #animalfacts + 3 trending</p>
+                </div>
+                <button
+                    id="generate-btn"
+                    onclick="startGeneration()"
+                    class="glow-btn text-white px-8 py-3 rounded-xl font-bold text-base"
+                >
+                    Generate & Upload
+                </button>
+            </div>
+        </div>
+
+        <!-- Progress Card (hidden initially) -->
+        <div id="progress-card" class="card rounded-2xl p-6 mb-6 hidden">
+            <h3 class="font-semibold text-lg mb-5 flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                Pipeline Progress
+            </h3>
+            <div class="space-y-3" id="steps-container"></div>
+        </div>
+
+        <!-- Error Card (hidden initially) -->
+        <div id="error-card" class="card rounded-2xl p-6 mb-6 hidden border-red-500/50">
+            <div class="flex items-start gap-3">
+                <svg class="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div>
+                    <h3 class="font-semibold text-red-400">Pipeline Error</h3>
+                    <p id="error-text" class="text-sm text-slate-300 mt-1"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Card (hidden initially) -->
+        <div id="result-card" class="card rounded-2xl p-6 mb-6 hidden pulse-border">
+            <h3 class="font-semibold text-lg mb-4 flex items-center gap-2 text-green-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Video Ready!
+            </h3>
+
+            <!-- Video Preview -->
+            <div class="mb-4 rounded-xl overflow-hidden bg-black flex justify-center">
+                <video id="video-preview" controls class="max-h-[400px] rounded-xl" style="aspect-ratio: 9/16;"></video>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <a id="download-btn" href="#" download class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-105">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Download Video
+                </a>
+                <a id="youtube-link" href="#" target="_blank" class="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-6 py-3 rounded-xl font-semibold transition-all hover:scale-105 hidden">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"/>
+                        <path d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="white"/>
+                    </svg>
+                    View on YouTube
+                </a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-slate-600 text-xs mt-8">
+            Powered by Ollama (kimi) + ElevenLabs + Pexels + FFmpeg + YouTube API
+        </div>
+    </div>
+
+    <script>
+        const STEP_LABELS = {
+            script_generation: "Generating Hook + Script (Ollama kimi)",
+            metadata_generation: "Generating Title & Trending Hashtags",
+            voice_generation: "Generating Voice (ElevenLabs)",
+            subtitle_generation: "Creating Subtitles (Whisper)",
+            stock_footage: "Downloading 4 Stock Clips (Pexels)",
+            video_assembly: "Assembling 9:16 Video + Music (FFmpeg)",
+            youtube_upload: "Uploading to YouTube",
+        };
+
+        const STEP_ORDER = [
+            "script_generation",
+            "metadata_generation",
+            "voice_generation",
+            "subtitle_generation",
+            "stock_footage",
+            "video_assembly",
+            "youtube_upload",
+        ];
+
+        let currentJobId = null;
+        let pollInterval = null;
+
+        // ── YouTube Status ──
+        async function checkYouTubeStatus() {
+            try {
+                const res = await fetch("/api/yt-status");
+                const data = await res.json();
+                const badge = document.getElementById("yt-badge");
+                const statusText = document.getElementById("yt-status-text");
+                const btn = document.getElementById("yt-setup-btn");
+
+                badge.classList.remove("hidden");
+
+                if (data.connected) {
+                    badge.textContent = "Connected";
+                    badge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400";
+                    statusText.textContent = "Your YouTube account is connected";
+                    btn.textContent = "Reconnect";
+                } else if (data.client_secret_exists) {
+                    badge.textContent = "Not Connected";
+                    badge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-400";
+                    statusText.textContent = "Click Setup to authorize your YouTube account";
+                } else {
+                    badge.textContent = "Setup Required";
+                    badge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400";
+                    statusText.textContent = "Place client_secret.json in credentials/ folder first";
+                }
+            } catch (e) {
+                document.getElementById("yt-status-text").textContent = "Could not check status";
+            }
+        }
+
+        function setupYouTube() {
+            window.open("/api/yt-auth", "_blank", "width=600,height=700");
+            setTimeout(checkYouTubeStatus, 5000);
+            setTimeout(checkYouTubeStatus, 15000);
+            setTimeout(checkYouTubeStatus, 30000);
+        }
+
+        // ── Music Upload ──
+        function handleMusicSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            showMusicFile(file);
+        }
+
+        function showMusicFile(file) {
+            document.getElementById("music-placeholder").classList.add("hidden");
+            document.getElementById("music-selected").classList.remove("hidden");
+            document.getElementById("music-filename").textContent = file.name;
+            document.getElementById("music-size").textContent = (file.size / (1024 * 1024)).toFixed(1) + " MB";
+            document.getElementById("music-dropzone").classList.add("has-file");
+        }
+
+        function clearMusic(event) {
+            event.stopPropagation();
+            document.getElementById("music-input").value = "";
+            document.getElementById("music-placeholder").classList.remove("hidden");
+            document.getElementById("music-selected").classList.add("hidden");
+            document.getElementById("music-dropzone").classList.remove("has-file");
+        }
+
+        // Drag & drop
+        const dropzone = document.getElementById("music-dropzone");
+        dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("dragover"); });
+        dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+        dropzone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropzone.classList.remove("dragover");
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith("audio/")) {
+                const input = document.getElementById("music-input");
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+                showMusicFile(file);
+            }
+        });
+
+        // ── Generation ──
+        async function startGeneration() {
+            const topic = document.getElementById("topic-input").value.trim();
+            if (!topic) {
+                alert("Please enter a video topic!");
+                return;
+            }
+
+            const btn = document.getElementById("generate-btn");
+            btn.disabled = true;
+            btn.textContent = "Starting...";
+
+            document.getElementById("result-card").classList.add("hidden");
+            document.getElementById("error-card").classList.add("hidden");
+
+            const progressCard = document.getElementById("progress-card");
+            progressCard.classList.remove("hidden");
+            renderSteps({});
+
+            try {
+                // Use FormData to send topic + music file
+                const formData = new FormData();
+                formData.append("topic", topic);
+
+                const musicInput = document.getElementById("music-input");
+                if (musicInput.files.length > 0) {
+                    formData.append("music", musicInput.files[0]);
+                }
+
+                const res = await fetch("/api/generate", {
+                    method: "POST",
+                    body: formData,
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || "Failed to start pipeline");
+                }
+
+                currentJobId = data.job_id;
+
+                if (pollInterval) clearInterval(pollInterval);
+                pollInterval = setInterval(pollStatus, 2000);
+
+            } catch (e) {
+                showError(e.message);
+                btn.disabled = false;
+                btn.textContent = "Generate & Upload";
+            }
+        }
+
+        async function pollStatus() {
+            if (!currentJobId) return;
+
+            try {
+                const res = await fetch(`/api/status/${currentJobId}`);
+                const data = await res.json();
+
+                renderSteps(data.steps || {});
+
+                if (data.status === "completed") {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                    showResult(data);
+                    resetButton();
+                } else if (data.status === "failed") {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                    showError(data.error || "Pipeline failed");
+                    resetButton();
+                }
+            } catch (e) {
+                // Network error, keep polling
+            }
+        }
+
+        function renderSteps(steps) {
+            const container = document.getElementById("steps-container");
+            container.innerHTML = "";
+
+            STEP_ORDER.forEach(key => {
+                const status = steps[key] || "pending";
+                const label = STEP_LABELS[key];
+                const div = document.createElement("div");
+                div.className = "flex items-center gap-3 p-3 rounded-lg " + getStepBg(status);
+                div.innerHTML = `${getStepIcon(status)}<span class="text-sm font-medium ${getStepTextColor(status)}">${label}</span>`;
+                container.appendChild(div);
+            });
+        }
+
+        function getStepIcon(status) {
+            switch(status) {
+                case "completed":
+                    return `<svg class="step-icon text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>`;
+                case "running":
+                    return `<svg class="step-icon text-indigo-400 spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>`;
+                case "failed":
+                    return `<svg class="step-icon text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>`;
+                case "skipped":
+                    return `<svg class="step-icon text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+                default:
+                    return `<div class="step-icon rounded-full border-2 border-slate-600"></div>`;
+            }
+        }
+
+        function getStepBg(status) {
+            switch(status) {
+                case "running": return "bg-indigo-500/10";
+                case "completed": return "bg-green-500/5";
+                case "failed": return "bg-red-500/10";
+                default: return "";
+            }
+        }
+
+        function getStepTextColor(status) {
+            switch(status) {
+                case "completed": return "text-green-400";
+                case "running": return "text-indigo-300";
+                case "failed": return "text-red-400";
+                case "skipped": return "text-yellow-400";
+                default: return "text-slate-500";
+            }
+        }
+
+        function showResult(data) {
+            const card = document.getElementById("result-card");
+            card.classList.remove("hidden");
+
+            // Video preview
+            const videoPreview = document.getElementById("video-preview");
+            videoPreview.src = `/api/download/${data.id}`;
+
+            // Download button
+            const downloadBtn = document.getElementById("download-btn");
+            downloadBtn.href = `/api/download/${data.id}`;
+
+            // YouTube link
+            const ytLink = document.getElementById("youtube-link");
+            if (data.youtube_url) {
+                ytLink.href = data.youtube_url;
+                ytLink.classList.remove("hidden");
+            } else {
+                ytLink.classList.add("hidden");
+            }
+        }
+
+        function showError(message) {
+            const card = document.getElementById("error-card");
+            card.classList.remove("hidden");
+            document.getElementById("error-text").textContent = message;
+        }
+
+        function resetButton() {
+            const btn = document.getElementById("generate-btn");
+            btn.disabled = false;
+            btn.textContent = "Generate & Upload";
+        }
+
+        // Init
+        checkYouTubeStatus();
+    </script>
+</body>
+</html>

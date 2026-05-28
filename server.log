@@ -1,0 +1,7 @@
+INFO:     Started server process [16916]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8000): [winerror 10048] only one usage of each socket address (protocol/network address/port) is normally permitted
+IC:\Users\HP\AppData\Roaming\Python\Python312\site-packages\whisper\transcribe.py:132: UserWarning: FP16 is not supported on CPU; using FP32 instead
+  warnings.warn("FP16 is not supported on CPU; using FP32 instead")
+INFO:     127.0.0.1:51713 - "GET /api/status/52e13ee5-18f5-49e0-abe5-3baca2054a1c HTTP/1.1" 200 OK
